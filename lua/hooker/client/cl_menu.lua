@@ -53,8 +53,12 @@ local function CleanupData(searchData)
 	clientHooks = clientHooksCache or {}
 	serverHooks = serverHooksCache or {}
 
-	if searchData then clientHooks = SearchTable(clientHooksCache, searchData) end
-	if searchData then serverHooks = SearchTable(serverHooksCache, searchData) end
+	if searchData then
+		clientHooks = SearchTable(clientHooksCache, searchData)
+		serverHooks = SearchTable(serverHooksCache, searchData)
+		clientNode:SetExpanded(true)
+		serverNode:SetExpanded(true)
+	end
 
 	-- Pretty much the same code as the server
 	local hooks = {}
