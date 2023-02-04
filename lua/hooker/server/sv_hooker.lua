@@ -26,14 +26,25 @@ net.Receive("Hooker:RefreshHooks", function(len, ply)
 	for hookName, hookChild in SortedPairs(hookList) do
 		local childs = {}
 		for childName, childFunction in pairs(hookChild) do
+			-- Get the hook function data (e.g. position in file...)
+			local functionInfo = debug.getinfo(childFunction, "S")
+
 			childName, childFunction = tostring(childName), tostring(childFunction)
-			-- Structure: hooks[hookName] = {[childName] = childFunction}
-			childs[childName] = childFunction
+			childs[childName] = {
+				["function"] = childFunction,
+				["source"] = functionInfo["source"],
+				["linedefined"] = functionInfo["linedefined"],
+			}
 		end
 		hooks[hookName] = childs
 	end
 
 	net.Start("Hooker:ServerHooksCallback")
-	net.WriteTable(hooks)
+	-- The table is soo heavy that I need to compress data...
+	local jsonHooks = util.TableToJSON(hooks)
+	local compressedHooks = util.Compress(jsonHooks)
+
+	net.WriteUInt(#compressedHooks, 16)
+	net.WriteData(compressedHooks, #compressedHooks)
 	net.Send(ply)
 end)

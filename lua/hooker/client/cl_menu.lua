@@ -25,11 +25,26 @@ local function SearchTable(searchedTable, searchData)
 	return z
 end
 
--- These tables contains alllll the values of the game hooks
--- local finalServerHooks = {}
--- local finalClientHooks = {}
+--[[
+This table contains alllll the values of the game hooks,
+including server/client hooks & function data.
+Here is the structure:
+-- Server
+	-- Hook Name
+		-- Hook identifier (addon)
+			-- function: xx
+			-- source: xx
+			-- linedefined: xx
+-- Client
+	-- Hook Name
+		-- Hook identifier (addon)
+			-- function: xx
+			-- source: xx
+			-- linedefined: xx
+]]
+local finalHooks = {}
 
-local function RefreshData(searchData)
+local function CleanupData(searchData)
 	clientNode:Clear()
 	serverNode:Clear()
 
@@ -41,24 +56,49 @@ local function RefreshData(searchData)
 	if searchData then clientHooks = SearchTable(clientHooksCache, searchData) end
 	if searchData then serverHooks = SearchTable(serverHooksCache, searchData) end
 
+	-- Pretty much the same code as the server
+	local hooks = {}
 	for hookName, hookChild in SortedPairs(clientHooks) do
-		local hookNameNode = clientNode:AddNode(hookName, "icon16/database_key.png")
-
+		local childs = {}
 		for childName, childFunction in pairs(hookChild) do
-			local childNameNode = hookNameNode:AddNode(tostring(childName), "icon16/database_gear.png")
-			local func = childNameNode:AddNode(tostring(childFunction), "icon16/page_white_flash.png")
-			func:AddNode(debug.getinfo(childFunction, "S")["source"])
-			func:AddNode("Line: " .. debug.getinfo(childFunction, "S")["linedefined"])
-			-- func:AddNode("Args: " .. GetFunctionArgs(childFunction))
+			local functionInfo = debug.getinfo(childFunction, "S")
+
+			childName, childFunction = tostring(childName), tostring(childFunction)
+			childs[childName] = {
+				["function"] = childFunction,
+				["source"] = functionInfo["source"],
+				["linedefined"] = functionInfo["linedefined"],
+			}
 		end
+		hooks[hookName] = childs
 	end
 
-	for hookName, hookChild in SortedPairs(serverHooks) do
-		local hookNameNode = serverNode:AddNode(hookName, "icon16/database_key.png")
+	-- Already cleaned up on the server side
+	finalHooks["Client"] = hooks
+	finalHooks["Server"] = serverHooks
+end
 
-		for childName, childFunction in pairs(hookChild) do
-			local childNameNode = hookNameNode:AddNode(tostring(childName), "icon16/database_gear.png")
-			childNameNode:AddNode(tostring(childFunction), "icon16/page_white_flash.png")
+local function PopulateData()
+	for hookSide, hookValues in pairs(finalHooks) do
+		for hookName, hookIdentifier in SortedPairs(hookValues) do
+			if hookSide == "Client" then
+				local hookNameNode = clientNode:AddNode(hookName, "icon16/database_key.png")
+				for addonHookName, functionData in pairs(hookIdentifier) do
+					local addonHookNameNode = hookNameNode:AddNode(addonHookName, "icon16/database_gear.png")
+					addonHookNameNode:AddNode("Function: " .. functionData["function"], "icon16/page_white_flash.png")
+					addonHookNameNode:AddNode("Source: " .. functionData["source"], "icon16/page_white_flash.png")
+					addonHookNameNode:AddNode("Line: " .. functionData["linedefined"], "icon16/page_white_flash.png")
+				end
+			end
+			if hookSide == "Server" then
+				local hookNameNode = serverNode:AddNode(hookName, "icon16/database_key.png")
+				for addonHookName, functionData in pairs(hookIdentifier) do
+					local addonHookNameNode = hookNameNode:AddNode(addonHookName, "icon16/database_gear.png")
+					addonHookNameNode:AddNode("Function: " .. functionData["function"], "icon16/page_white_flash.png")
+					addonHookNameNode:AddNode("Source: " .. functionData["source"], "icon16/page_white_flash.png")
+					addonHookNameNode:AddNode("Line: " .. functionData["linedefined"], "icon16/page_white_flash.png")
+				end
+			end
 		end
 	end
 end
@@ -93,9 +133,9 @@ local function DrawFrame()
 	if next(serverHooksCache) == nil or next(clientHooksCache) == nil then
 		net.Start("Hooker:RefreshHooks")
 		net.SendToServer()
-	else
-		RefreshData()
 	end
+	CleanupData()
+	PopulateData()
 
 	-- == REFRESH BUTTON ==
 	local refreshBtn = vgui.Create("DButton", topPanel)
@@ -106,9 +146,6 @@ local function DrawFrame()
 		net.SendToServer()
 	end
 
-	-- local clientHooks = hook.GetTable()
-	-- RefreshData(clientHooks, serverHooks, clientNode, serverNode)
-
 	-- == SEARCH ==
 	local searchBox = vgui.Create("DTextEntry", topPanel)
 	searchBox:SetPlaceholderText("Search...")
@@ -117,28 +154,32 @@ local function DrawFrame()
 	searchBox.OnEnter = function(self)
 		value = self:GetValue()
 		if value == "" then value = nil end
-		RefreshData(value)
+		CleanupData(value)
+		PopulateData()
 	end
 end
 
-net.Receive("Hooker:ServerHooksCallback", function(len, ply)
-	serverHooksCache = net.ReadTable() or {}
-	clientHooksCache = hook.GetTable() or {}
-	RefreshData()
+net.Receive("Hooker:ServerHooksCallback", function()
+	local byte = net.ReadUInt(16)
+	local compressedData = net.ReadData(byte)
+	local netDecompressed = util.Decompress(compressedData)
+
+	serverHooksCache = util.JSONToTable(netDecompressed)
+	clientHooksCache = hook.GetTable()
+	CleanupData()
+	PopulateData()
 end)
 
 net.Receive("Hooker:OpenClientMenu", function() DrawFrame() end)
 
-local function GetFunctionArgs(func)
-	local info, params = debug.getinfo(func, "u"), {}
-	for i = 1, info.nparams do
-		params[i] = debug.getlocal(func, i)
-	end
-	if info.isvararg then
-		params[#params + 1] = "..."
-	end
-	return table.concat(params, ", ")
-end
-
--- hook.Add("Hooker:DataPopulated", "Hooker:Finished", function() CreateFrame() end)
+-- local function GetFunctionArgs(func)
+-- 	local info, params = debug.getinfo(func, "u"), {}
+-- 	for i = 1, info.nparams do
+-- 		params[i] = debug.getlocal(func, i)
+-- 	end
+-- 	if info.isvararg then
+-- 		params[#params + 1] = "..."
+-- 	end
+-- 	return table.concat(params, ", ")
+-- end
 
