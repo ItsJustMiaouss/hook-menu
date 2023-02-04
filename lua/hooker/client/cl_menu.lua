@@ -171,15 +171,3 @@ net.Receive("Hooker:ServerHooksCallback", function()
 end)
 
 net.Receive("Hooker:OpenClientMenu", function() DrawFrame() end)
-
--- local function GetFunctionArgs(func)
--- 	local info, params = debug.getinfo(func, "u"), {}
--- 	for i = 1, info.nparams do
--- 		params[i] = debug.getlocal(func, i)
--- 	end
--- 	if info.isvararg then
--- 		params[#params + 1] = "..."
--- 	end
--- 	return table.concat(params, ", ")
--- end
-
