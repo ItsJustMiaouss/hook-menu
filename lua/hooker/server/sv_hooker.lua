@@ -13,10 +13,11 @@ function HOOKER:OpenMenu(ply)
 end
 
 net.Receive("Hooker:RefreshHooks", function(len, ply)
+	if not ply:IsSuperAdmin() then return end
 	local hookList = hook.GetTable()
 
 	--[[
-		This bad boy code allow to transform all of the hook.GeTable() function to a strings
+		This bad boy code allow to transform all of the hook.GeTable() function to strings
 		in order to send the table to the client.
 		Sending directly hook.GeTable() (a function that returns a table) via net.WriteTable()
 		was throwing an error, even if type(hook.GeTable()) is a table... <3 lua.
