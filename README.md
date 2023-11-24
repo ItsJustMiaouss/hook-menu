@@ -1,4 +1,4 @@
-# Hooker
+# HookMenu
  
  A Garry's Mod addon used to look into your server/client hooks, all in a simple menu!
  
@@ -8,7 +8,7 @@
 
 # How to use
 
-Just type ``hooker`` in your console. You must be a superadmin.
+Just type ``hook_menu`` in your console. You must be a superadmin.
 
 # Warning
 
