@@ -5,7 +5,7 @@ if SERVER then
 
 	include("hook_menu/server/sv_hook_menu.lua")
 
-	MsgC(Color(255, 255, 0), "[HookMenu] Notice: HookMenu is a heavy tool. Opening a menu may lag your game or your server!")
+	MsgC(Color(255, 255, 0), "[HookMenu] Notice: HookMenu is a heavy tool. Opening the menu may lag your game and your server!")
 end
 
 if CLIENT then

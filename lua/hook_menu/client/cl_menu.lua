@@ -8,27 +8,24 @@ local clientHooksCache = clientHooksCache or {}
 local backgroundColor = Color(39,43,48)
 
 --[[
-	Remove all the unwanted values from a table.
-	This functions is specific to the Garry's Mod hook table.
+	Search into the hook table and return the values.
+	This functions is specific to the Garry's Mod hooks table (hook.GetTable()).
 ]]
 local function SearchTable(searchedTable, searchData)
-	-- I was inspired to name these variables
-	local z = {}
+	local result = {}
 	for a, b in SortedPairs(searchedTable) do
 		for c, d in pairs(b) do
 			if not string.find(string.lower(tostring(c)), searchData) then continue end
-			z[a] = {[c] = d}
+			result[a] = {[c] = d}
 		end
 		if not string.find(string.lower(a), searchData) then continue end
-		z[a] = b
+		result[a] = b
 	end
-	return z
+	return result
 end
 
 --[[
-This table contains alllll the values of the game hooks,
-including server/client hooks & function data.
-Here is the structure:
+Table structure (including client and server hooks):
 -- Server
 	-- Hook Name
 		-- Hook identifier (addon)
@@ -60,7 +57,7 @@ local function CleanupData(searchData)
 		serverNode:SetExpanded(true)
 	end
 
-	-- Pretty much the same code as the server
+	-- Pretty much the same code as the server (sv_hook_menu.lua)
 	local hooks = {}
 	for hookName, hookChild in SortedPairs(clientHooks) do
 		local childs = {}

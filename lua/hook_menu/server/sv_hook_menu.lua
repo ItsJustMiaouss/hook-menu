@@ -17,11 +17,8 @@ net.Receive("HookMenu:RefreshHooks", function(len, ply)
 	local hookList = hook.GetTable()
 
 	--[[
-		This bad boy code allow to transform all of the hook.GeTable() function to strings
-		in order to send the table to the client.
-		Sending directly hook.GeTable() (a function that returns a table) via net.WriteTable()
-		was throwing an error, even if type(hook.GeTable()) is a table... <3 lua.
-		Btw, this is super heavy to send but... you know
+		Transform the hook.GeTable() result to strings in order to send the table to the client.
+		The table itself was too heavy to be sent directly.
 	]]
 	local hooks = {}
 	for hookName, hookChild in SortedPairs(hookList) do
@@ -41,7 +38,7 @@ net.Receive("HookMenu:RefreshHooks", function(len, ply)
 	end
 
 	net.Start("HookMenu:ServerHooksCallback")
-	-- The table is soo heavy that I need to compress data...
+	-- Compress the data and send it to the client.
 	local jsonHooks = util.TableToJSON(hooks)
 	local compressedHooks = util.Compress(jsonHooks)
 
