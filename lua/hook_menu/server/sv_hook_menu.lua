@@ -2,7 +2,7 @@ util.AddNetworkString("HookMenu:OpenClientMenu")
 util.AddNetworkString("HookMenu:RefreshHooks")
 util.AddNetworkString("HookMenu:ServerHooksCallback")
 
-concommand.Add("HookMenu", function(ply, cmd, args)
+concommand.Add("hook_menu", function(ply, cmd, args)
 	if not ply:IsSuperAdmin() then return end
 	HOOKMENU:OpenMenu(ply)
 end)
